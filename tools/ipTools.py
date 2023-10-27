@@ -8,10 +8,7 @@ from tools.EMAIL.emailTools import ReadSenderEmail
 from time import sleep
 from colorama import Fore
 
-""" Check if site is under CloudFlare protection """
-
-
-def __isCloudFlare(link):
+def is_cloudflare_protected(link):
     parsed_uri = urlparse(link)
     domain = "{uri.netloc}".format(uri=parsed_uri)
     try:
@@ -27,49 +24,34 @@ def __isCloudFlare(link):
     except socket.gaierror:
         return False
 
-
-""" Return ip, port """
-
-
-def __GetAddressInfo(target):
+def get_address_info(target):
     try:
         ip = target.split(":")[0]
         port = int(target.split(":")[1])
     except IndexError:
-        print(f"{Fore.RED}[!] {Fore.MAGENTA}You must enter ip and port{Fore.RESET}")
+        print(f"{Fore.RED}[!] {Fore.MAGENTA}You must enter an IP and port{Fore.RESET}")
         sys.exit(1)
     else:
         return ip, port
 
-
-""" Return url (for HTTP method) """
-
-
-def __GetURLInfo(target):
+def get_url_info(target):
     if not target.startswith("http"):
         target = f"http://{target}"
     return target
 
-
-""" Get target, subject, body """
-
-
-def __GetEmailMessage():
+def get_email_message():
     server, username = ReadSenderEmail()
     subject = input(f"{Fore.BLUE}[?] {Fore.MAGENTA}Enter the Subject (leave blank for random value): ")
     body = input(f"{Fore.BLUE}[?] {Fore.MAGENTA}Enter Your Message (leave blank for random value): ")
     return [server, username, subject, body]
 
-""" Return target """
-
-
-def GetTargetAddress(target, method):
+def get_target_address(target, method):
     if method == "SMS":
         if target.startswith("+"):
             target = target[1:]
         return target
     elif method == "EMAIL":
-        email = __GetEmailMessage()
+        email = get_email_message()
         email.append(target)
         return email
     elif method in (
@@ -84,22 +66,18 @@ def GetTargetAddress(target, method):
         parsed_uri = urlparse(target)
         domain = "{uri.netloc}".format(uri=parsed_uri)
         origin = socket.gethostbyname(domain)
-        __isCloudFlare(domain)
+        is_cloudflare_protected(domain)
         return origin, 80
     elif method in ("SYN", "UDP", "NTP", "POD", "MEMCACHED", "ICMP", "SLOWLORIS"):
-        return __GetAddressInfo(target)
+        return get_address_info(target)
     elif method == "HTTP":
-        url = __GetURLInfo(target)
-        __isCloudFlare(url)
+        url = get_url_info(target)
+        is_cloudflare_protected(url)
         return url
     else:
         return target
 
-
-""" Is connected to internet """
-
-
-def InternetConnectionCheck():
+def internet_connection_check():
     try:
         requests.get("https://google.com", timeout=4)
     except:
